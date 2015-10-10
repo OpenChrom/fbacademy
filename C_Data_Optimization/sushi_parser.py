@@ -8,6 +8,7 @@
 # 
 # Contributors:
 #	Dr. Philip Wenig
+#	Kevin Hsu
 #*******************************************************************************/
 import struct
 import math
@@ -22,7 +23,7 @@ RICE_TYPE = 'SUSHI'
 results = []
 working_directory = os.getcwd()
 sub_dirs = os.listdir(working_directory)
-
+print working_directory
 for directory in sub_dirs:
 	if RICE_TYPE in directory:
 		for files in os.listdir(working_directory + "/" + directory):
@@ -126,8 +127,26 @@ for directory in sub_dirs:
 					except struct.error:
 						readFile = 0
 				results.append(current_results)
-f = open('out.csv', 'w')
-for item in results:
-	temp = ", ".join(map(str,item))
 
-	print >> f, temp # or f.write('...\n')
+f = open('out.csv', 'w')
+averageIntensity = []
+averageCount = []
+
+for intensityList in results:
+	index = 0
+	for reading in intensityList:
+		if index < len(averageIntensity):
+			averageIntensity[index] += reading
+			averageCount[index] += 1
+		else:
+			averageIntensity.append( reading )
+			averageCount.append( 1 )
+		index += 1
+
+for x in range(len(averageIntensity)):
+	averageIntensity[x] /= averageCount[x]
+
+results.append( averageIntensity )
+
+for item in results:
+	print >> f, ",".join(map(str, item))
