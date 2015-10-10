@@ -16,25 +16,21 @@ import os
 #
 # Parse all listed files.
 #
-
-MASTER_DIRECTORY = "C:/Users/Kevin/Documents/2015-2016/CSE 190/Rice Data for US trip/150928/150928 2015-09-28 17-09-08/"
-subdir = os.listdir(MASTER_DIRECTORY)
 INTERESTED_FILE = 'DAD1C.ch'
 RICE_TYPE = 'SUSHI'
 
 results = []
+working_directory = os.getcwd()
+sub_dirs = os.listdir(working_directory)
 
-for directory in subdir:
+for directory in sub_dirs:
 	if RICE_TYPE in directory:
-		#print directory
-		#print os.listdir(MASTER_DIRECTORY + directory)
-
-		for files in os.listdir(MASTER_DIRECTORY + directory):
+		for files in os.listdir(working_directory + "/" + directory):
 
 			current_results = []
 			
 			if INTERESTED_FILE == files:
-				f = open(MASTER_DIRECTORY + directory + "/" + files, 'rb')
+				f = open(working_directory + "/" + directory + "/" + files, 'rb')
 				#
 				# Wavelength
 				#
