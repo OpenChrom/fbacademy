@@ -97,11 +97,11 @@ public class PrincipleComponentProcessor {
 			monitor.subTask("Prepare scan values");
 			// TODO Need to implement the code to the below methods
 			prepareScanPcaResults(scanMap, pcaResults);
-			SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
-			List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
-			pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
-			Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
-			normalizeIntensityValues(pcaScanMap);
+			// SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
+			// List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
+			// pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
+			// Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
+			// normalizeIntensityValues(pcaScanMap);
 		}
 		/*
 		 * Return result.
@@ -112,35 +112,47 @@ public class PrincipleComponentProcessor {
 	private void prepareScanPcaResults(Map<String, List<Float>> scanMap, PcaResults pcaResults) {
 
 		// TODO Implement this method properly to work on scanMap
-		/*
-		 * Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
-		 * for(Map.Entry<String, IPeaks> entry : scanMap.entrySet()) {
-		 * PcaResult pcaResult = new PcaResult();
-		 * pcaResult.setPeaks(entry.getValue());
-		 * pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
-		 * }
-		 */
+		Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
+		for(Map.Entry<String, List<Float>> entry : scanMap.entrySet()) {
+			PcaResult pcaResult = new PcaResult();
+			// TODO: pcaResult.setPeaks(entry.getValue());
+			// pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
+		}
 	}
 
 	private SortedSet<Integer> collectScanRetentionTimes(Map<String, List<Float>> scanMap) {
 
 		// TODO Implement this method
-		return null;
+		SortedSet<Integer> collectedRetentionTimes = new TreeSet<Integer>();
+		for(Map.Entry<String, List<Float>> scansEntry : scanMap.entrySet()) {
+			/*
+			 * IPeaks peaks = peaksEntry.getValue();
+			 * for(IPeak peak : peaks.getPeaks()) {
+			 * if(peak instanceof IPeakMSD) {
+			 * IPeakMSD peakMSD = (IPeakMSD)peak;
+			 * int retentionTime = peakMSD.getPeakModel().getRetentionTimeAtPeakMaximum();
+			 * collectedRetentionTimes.add(retentionTime);
+			 * }
+			 * }
+			 */
+		}
+		return collectedRetentionTimes;
 	}
 
 	private Map<String, double[]> extractPcaScanMap(Map<String, List<Float>> scanMap, List<Integer> extractedRetentionTimes, int retentionTimeWindow) {
 
 		// TODO Implement this method
-		/*
-		 * Map<String, double[]> pcaScanMap = new HashMap<String, double[]>();
-		 * for(Map.Entry<String, IScans> ScansEntry : scanMap.entrySet()) {
-		 * String name = scansEntry.getKey();
-		 * IScans scans = scansEntry.getValue();
-		 * double[] intensityValues = extractPcaScanIntensityValues(scans, extractedRetentionTimes, retentionTimeWindow);
-		 * pcaScanMap.put(name, intensityValues);
-		 * }
-		 * return pcaScanMap;
-		 */
+		Map<String, double[]> pcaScanMap = new HashMap<String, double[]>();
+		for(Map.Entry<String, List<Float>> ScansEntry : scanMap.entrySet()) {
+			String name = ScansEntry.getKey();
+			List<Float> scans = ScansEntry.getValue();
+			/*
+			 * double[] intensityValues = extractPcaScanIntensityValues(scans, extractedRetentionTimes, retentionTimeWindow);
+			 * pcaScanMap.put(name, intensityValues);
+			 * }
+			 * return pcaScanMap;
+			 */
+		}
 		return null;
 	}
 
@@ -439,12 +451,14 @@ public class PrincipleComponentProcessor {
 				String name = extractNameFromFile(scanFile, "n.a.");
 				List<Float> slopes = new ArrayList<Float>();
 				float previousSignal = 0;
+				int previousTime = 0;
 				for(IScan scan : chromatogram.getScans()) {
 					float currentSignal = scan.getTotalSignal();
-					float slope = currentSignal - previousSignal; // intensities
-					// scan.getRetentionTime()); // times
+					int currentTime = scan.getRetentionTime();
+					float slope = (currentSignal - previousSignal) / (currentTime - previousTime);
 					slopes.add(slope);
 					previousSignal = currentSignal;
+					previousTime = currentTime;
 				}
 				scanMap.put(name, slopes);
 			} catch(TypeCastException e) {
