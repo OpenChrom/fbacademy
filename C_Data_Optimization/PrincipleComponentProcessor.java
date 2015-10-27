@@ -21,8 +21,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.IDataInputEntry;
+import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.IPcaResult;
+import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.ISample;
 import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.PcaResult;
 import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.PcaResults;
+import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.Sample;
 import org.eclipse.chemclipse.logging.core.Logger;
 import org.eclipse.chemclipse.model.core.IPeak;
 import org.eclipse.chemclipse.model.core.IPeaks;
@@ -43,10 +46,12 @@ public class PrincipleComponentProcessor {
 	private static final Logger logger = Logger.getLogger(PrincipleComponentProcessor.class);
 	private static final double NORMALIZATION_FACTOR = 1000;
 
-	public PcaResults process(List<IDataInputEntry> dataInputEntries, int retentionTimeWindow, int numberOfPrincipleComponents, IProgressMonitor monitor) {// , int typeOfExtraction) {
+	public PcaResults process(List<IDataInputEntry> dataInputEntries, int retentionTimeWindow, int numberOfPrincipleComponents, IProgressMonitor monitor) {// , int extractionType) {
 
-		// PATRICK/KEVIN: added extraction type as local variable for now
-		int typeOfExtraction = 0; // 0 = peaks, 1 = scans
+		int extractionType = 0; // PATRICK: added as local variable until argument is accepted
+		if(extractionType < 0 || extractionType > 1) {
+			extractionType = 0;
+		}
 		/*
 		 * Initialize PCA Results
 		 */
@@ -61,7 +66,7 @@ public class PrincipleComponentProcessor {
 			inputFiles.add(new File(inputEntry.getInputFile()));
 		}
 		//
-		if(typeOfExtraction == 0) {
+		if(extractionType == 0) {
 			/*
 			 * Read Peaks and prepare intensity values.
 			 */
@@ -71,6 +76,7 @@ public class PrincipleComponentProcessor {
 			preparePcaResults(peakMap, pcaResults);
 			SortedSet<Integer> collectedRetentionTimes = collectRetentionTimes(peakMap);
 			List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
+			int sampleSize = extractedRetentionTimes.size();
 			pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
 			Map<String, double[]> pcaPeakMap = extractPcaPeakMap(peakMap, extractedRetentionTimes, retentionTimeWindow);
 			normalizeIntensityValues(pcaPeakMap);
@@ -78,26 +84,117 @@ public class PrincipleComponentProcessor {
 			 * Run PCA
 			 */
 			monitor.subTask("Run PCA");
-			int sampleSize = extractedRetentionTimes.size();
-			int numSamples = pcaPeakMap.size();
-			PrincipalComponentAnalysis principleComponentAnalysis = initializePCA(pcaPeakMap, numSamples, sampleSize, numberOfPrincipleComponents);
+			PrincipalComponentAnalysis principleComponentAnalysis = initializePCA(pcaPeakMap, sampleSize, numberOfPrincipleComponents);
 			List<double[]> basisVectors = getBasisVectors(principleComponentAnalysis, numberOfPrincipleComponents);
 			pcaResults.setBasisVectors(basisVectors);
 			setEigenSpaceAndErrorValues(principleComponentAnalysis, pcaPeakMap, pcaResults);
-		} else if(typeOfExtraction == 1) {
+		} else if(extractionType == 1) {
 			/*
 			 * Read Scans and prepare intensity values.
 			 */
 			monitor.subTask("Extract scan values");
-			@SuppressWarnings("unused")
 			Map<String, List<Float>> scanMap = extractScans(inputFiles, monitor);
 			monitor.subTask("Prepare scan values");
-			// PATRICK/KEVIN TODO: convert scanMap to pcaResults
+			// TODO Need to implement the code to the below methods
+			prepareScanPcaResults(scanMap, pcaResults);
+			SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
+			List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
+			pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
+			Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
+			normalizeIntensityValues(pcaScanMap);
 		}
 		/*
 		 * Return result.
 		 */
 		return pcaResults;
+	}
+
+	private void prepareScanPcaResults(Map<String, List<Float>> scanMap, PcaResults pcaResults) {
+
+		// TODO Implement this method properly to work on scanMap
+		/*
+		 * Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
+		 * for(Map.Entry<String, IPeaks> entry : scanMap.entrySet()) {
+		 * PcaResult pcaResult = new PcaResult();
+		 * pcaResult.setPeaks(entry.getValue());
+		 * pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
+		 * }
+		 */
+	}
+
+	private SortedSet<Integer> collectScanRetentionTimes(Map<String, List<Float>> scanMap) {
+
+		// TODO Implement this method
+		return null;
+	}
+
+	private Map<String, double[]> extractPcaScanMap(Map<String, List<Float>> scanMap, List<Integer> extractedRetentionTimes, int retentionTimeWindow) {
+
+		// TODO Implement this method
+		/*
+		 * Map<String, double[]> pcaScanMap = new HashMap<String, double[]>();
+		 * for(Map.Entry<String, IScans> ScansEntry : scanMap.entrySet()) {
+		 * String name = scansEntry.getKey();
+		 * IScans scans = scansEntry.getValue();
+		 * double[] intensityValues = extractPcaScanIntensityValues(scans, extractedRetentionTimes, retentionTimeWindow);
+		 * pcaScanMap.put(name, intensityValues);
+		 * }
+		 * return pcaScanMap;
+		 */
+		return null;
+	}
+
+	/**
+	 * Re-evaluates the PCA results.
+	 * 
+	 * @param pcaResults
+	 */
+	public void reEvaluate(PcaResults pcaResults) {
+
+		int numberOfPrincipleComponents = pcaResults.getNumberOfPrincipleComponents();
+		int numSamples = 0;
+		int sampleSize = 0; // Needs to be the same size for each sample.
+		//
+		Map<ISample, IPcaResult> resultMap = pcaResults.getPcaResultMap();
+		for(Map.Entry<ISample, IPcaResult> entry : resultMap.entrySet()) {
+			if(entry.getKey().isSelected()) {
+				numSamples++;
+				sampleSize = entry.getValue().getSampleData().length;
+			}
+		}
+		//
+		PrincipalComponentAnalysis principleComponentAnalysis = new PrincipalComponentAnalysis();
+		principleComponentAnalysis.setup(numSamples, sampleSize);
+		/*
+		 * Add the samples.
+		 */
+		for(Map.Entry<ISample, IPcaResult> entry : resultMap.entrySet()) {
+			if(entry.getKey().isSelected()) {
+				double[] sampleData = entry.getValue().getSampleData();
+				principleComponentAnalysis.addSample(sampleData);
+			}
+		}
+		/*
+		 * Compute the basis for the number of principle components.
+		 */
+		principleComponentAnalysis.computeBasis(numberOfPrincipleComponents);
+		List<double[]> basisVectors = getBasisVectors(principleComponentAnalysis, numberOfPrincipleComponents);
+		pcaResults.setBasisVectors(basisVectors);
+		/*
+		 * Re-evaluate the eigen space and error membership.
+		 */
+		for(Map.Entry<ISample, IPcaResult> entry : resultMap.entrySet()) {
+			if(entry.getKey().isSelected()) {
+				//
+				IPcaResult pcaResult = entry.getValue();
+				double[] sampleData = pcaResult.getSampleData();
+				double[] eigenSpace = principleComponentAnalysis.sampleToEigenSpace(sampleData);
+				double errorMemberShip = principleComponentAnalysis.errorMembership(sampleData);
+				//
+				pcaResult.setEigenSpace(eigenSpace);
+				pcaResult.setErrorMemberShip(errorMemberShip);
+			}
+		}
 	}
 
 	/**
@@ -108,16 +205,15 @@ public class PrincipleComponentProcessor {
 	 */
 	private void preparePcaResults(Map<String, IPeaks> peakMap, PcaResults pcaResults) {
 
-		Map<String, PcaResult> pcaResultMap = pcaResults.getPcaResultMap();
+		Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
 		for(Map.Entry<String, IPeaks> entry : peakMap.entrySet()) {
 			/*
 			 * PCA result
 			 */
 			PcaResult pcaResult = new PcaResult();
 			pcaResult.setPeaks(entry.getValue());
-			pcaResultMap.put(entry.getKey(), pcaResult);
+			pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
 		}
-		pcaResults.setPcaResultMap(pcaResultMap);
 	}
 
 	/**
@@ -129,11 +225,12 @@ public class PrincipleComponentProcessor {
 	 * @param numberOfPrincipleComponents
 	 * @return PrincipleComponentAnalysis
 	 */
-	private PrincipalComponentAnalysis initializePCA(Map<String, double[]> pcaPeakMap, int numSamples, int sampleSize, int numberOfPrincipleComponents) {
+	private PrincipalComponentAnalysis initializePCA(Map<String, double[]> pcaPeakMap, int sampleSize, int numberOfPrincipleComponents) {
 
 		/*
 		 * Initialize the PCA analysis.
 		 */
+		int numSamples = pcaPeakMap.size();
 		PrincipalComponentAnalysis principleComponentAnalysis = new PrincipalComponentAnalysis();
 		principleComponentAnalysis.setup(numSamples, sampleSize);
 		/*
@@ -169,8 +266,10 @@ public class PrincipleComponentProcessor {
 		 * Set the eigen space and error membership values.
 		 */
 		for(Map.Entry<String, double[]> entry : pcaPeakMap.entrySet()) {
-			String name = entry.getKey();
-			PcaResult pcaResult = pcaResults.getPcaResultMap().get(name);
+			/*
+			 * Get the sample result.
+			 */
+			IPcaResult pcaResult = pcaResults.getPcaResultMap().get(new Sample(entry.getKey()));
 			//
 			double[] sampleData = entry.getValue();
 			double[] eigenSpace = principleComponentAnalysis.sampleToEigenSpace(sampleData);
@@ -220,7 +319,7 @@ public class PrincipleComponentProcessor {
 	}
 
 	/**
-	 * Extracts a pca peak map.
+	 * Extracts a PCA peak map.
 	 * 
 	 * @param peakMap
 	 * @param extractedRetentionTimes
