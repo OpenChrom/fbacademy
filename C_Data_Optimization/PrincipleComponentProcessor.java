@@ -20,13 +20,18 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.IDataInputEntry;
 import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.PcaResult;
 import org.eclipse.chemclipse.chromatogram.xxd.process.supplier.pca.model.PcaResults;
 import org.eclipse.chemclipse.logging.core.Logger;
 import org.eclipse.chemclipse.model.core.IPeak;
 import org.eclipse.chemclipse.model.core.IPeaks;
+import org.eclipse.chemclipse.model.core.IScan;
+import org.eclipse.chemclipse.msd.converter.chromatogram.ChromatogramConverterMSD;
 import org.eclipse.chemclipse.msd.converter.peak.PeakConverterMSD;
+import org.eclipse.chemclipse.msd.converter.processing.chromatogram.IChromatogramMSDImportConverterProcessingInfo;
 import org.eclipse.chemclipse.msd.converter.processing.peak.IPeakImportConverterProcessingInfo;
+import org.eclipse.chemclipse.msd.model.core.IChromatogramMSD;
 import org.eclipse.chemclipse.msd.model.core.IPeakMSD;
 import org.eclipse.chemclipse.numeric.statistics.Calculations;
 import org.eclipse.chemclipse.processing.core.exceptions.TypeCastException;
@@ -38,23 +43,25 @@ public class PrincipleComponentProcessor {
 	private static final Logger logger = Logger.getLogger(PrincipleComponentProcessor.class);
 	private static final double NORMALIZATION_FACTOR = 1000;
 
-	// EDITED BY KEVIN
-	public PcaResults process(List<File> inputFiles, int retentionTimeWindow, int numberOfPrincipleComponents, IProgressMonitor monitor, int extractionType) {
+	public PcaResults process(List<IDataInputEntry> dataInputEntries, int retentionTimeWindow, int numberOfPrincipleComponents, IProgressMonitor monitor) {// , int typeOfExtraction) {
+
+		// PATRICK/KEVIN: added extraction type as local variable for now
+		int typeOfExtraction = 0; // 0 = peaks, 1 = scans
 		/*
 		 * Initialize PCA Results
 		 */
-		PcaResults pcaResults = new PcaResults();
+		PcaResults pcaResults = new PcaResults(dataInputEntries);
 		pcaResults.setRetentionTimeWindow(retentionTimeWindow);
 		pcaResults.setNumberOfPrincipleComponents(numberOfPrincipleComponents);
-		
-		if (extractionType < 0 || extractionType > 1) {
-			extractionType 0;
-		}
-		
 		/*
-		 * Extract peaks
+		 * Extract data
 		 */
-		if(extractionType == 0) {
+		List<File> inputFiles = new ArrayList<File>();
+		for(IDataInputEntry inputEntry : dataInputEntries) {
+			inputFiles.add(new File(inputEntry.getInputFile()));
+		}
+		//
+		if(typeOfExtraction == 0) {
 			/*
 			 * Read Peaks and prepare intensity values.
 			 */
@@ -77,38 +84,20 @@ public class PrincipleComponentProcessor {
 			List<double[]> basisVectors = getBasisVectors(principleComponentAnalysis, numberOfPrincipleComponents);
 			pcaResults.setBasisVectors(basisVectors);
 			setEigenSpaceAndErrorValues(principleComponentAnalysis, pcaPeakMap, pcaResults);
-			/*
-			 * Return result.
-			 */
-			return pcaResults;
-		} else if(extractionType == 1) {
+		} else if(typeOfExtraction == 1) {
 			/*
 			 * Read Scans and prepare intensity values.
 			 */
 			monitor.subTask("Extract scan values");
-			Map<String, IScans> scanMap = extractScans(inputFiles, monitor);
+			@SuppressWarnings("unused")
+			Map<String, List<Float>> scanMap = extractScans(inputFiles, monitor);
 			monitor.subTask("Prepare scan values");
-			preparePcaResults(scanMap, pcaResults);
-			SortedSet<Integer> collectedRetentionTimes = collectRetentionTimes(scanMap);
-			List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
-			pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
-			Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
-			normalizeIntensityValues(pcaScanMap);
-			/*
-			 * Run PCA
-			 */
-			monitor.subTask("Run PCA");
-			int sampleSize = extractedRetentionTimes.size();
-			int numSamples = pcaScanMap.size();
-			PrincipalComponentAnalysis principleComponentAnalysis = initializePCA(pcaScanMap, numSamples, sampleSize, numberOfPrincipleComponents);
-			List<double[]> basisVectors = getBasisVectors(principleComponentAnalysis, numberOfPrincipleComponents);
-			pcaResults.setBasisVectors(basisVectors);
-			setEigenSpaceAndErrorValues(principleComponentAnalysis, pcaScanMap, pcaResults);
-			/*
-			 * Return result.
-			 */
-			return pcaResults;
+			// PATRICK/KEVIN TODO: convert scanMap to pcaResults
 		}
+		/*
+		 * Return result.
+		 */
+		return pcaResults;
 	}
 
 	/**
@@ -126,27 +115,6 @@ public class PrincipleComponentProcessor {
 			 */
 			PcaResult pcaResult = new PcaResult();
 			pcaResult.setPeaks(entry.getValue());
-			pcaResultMap.put(entry.getKey(), pcaResult);
-		}
-		pcaResults.setPcaResultMap(pcaResultMap);
-	}	
-
-	/**
-	 * Sets the initial PCA result map.
-	 * 
-	 * @param scanMap
-	 * @param pcaResults
-	 */
-	// EDITED BY KEVIN
-	private void preparePcaResults(Map<String, IScans> scanMap, PcaResults pcaResults) {
-
-		Map<String, PcaResult> pcaResultMap = pcaResults.getPcaResultMap();
-		for(Map.Entry<String, IScans> entry : scanMap.entrySet()) {
-			/*
-			 * PCA result
-			 */
-			PcaResult pcaResult = new PcaResult();
-			pcaResult.setScans(entry.getValue());
 			pcaResultMap.put(entry.getKey(), pcaResult);
 		}
 		pcaResults.setPcaResultMap(pcaResultMap);
@@ -272,27 +240,6 @@ public class PrincipleComponentProcessor {
 	}
 
 	/**
-	 * Extracts a pca scan map.
-	 * 
-	 * @param scanMap
-	 * @param extractedRetentionTimes
-	 * @param retentionTimeWindow
-	 * @return Map<String, double[]>
-	 */
-	//EDITED BY KEVIN
-	private Map<String, double[]> extractPcaScanMap(Map<String, IScans> scanMap, List<Integer> extractedRetentionTimes, int retentionTimeWindow) {
-
-		Map<String, double[]> pcaScanMap = new HashMap<String, double[]>();
-		for(Map.Entry<String, IScans> ScansEntry : scanMap.entrySet()) {
-			String name = scansEntry.getKey();
-			IScans scans = scansEntry.getValue();
-			double[] intensityValues = extractPcaScanIntensityValues(scans, extractedRetentionTimes, retentionTimeWindow);
-			pcaScanMap.put(name, intensityValues);
-		}
-		return pcaScanMap;
-	}
-
-	/**
 	 * Calculates a list of condensed retention times. The condense factor is given by the retention time window.
 	 * 
 	 * @param collectedRetentionTimes
@@ -379,6 +326,38 @@ public class PrincipleComponentProcessor {
 	/**
 	 * Loads each file and tries to extract the scans.
 	 * 
+	 * @param scanFiles
+	 * @param monitor
+	 * @return Map<String, List<Float>>
+	 */
+	private Map<String, List<Float>> extractScans(List<File> scanFiles, IProgressMonitor monitor) {
+
+		Map<String, List<Float>> scanMap = new HashMap<String, List<Float>>();
+		for(File scanFile : scanFiles) {
+			IChromatogramMSDImportConverterProcessingInfo processingInfo = ChromatogramConverterMSD.convert(scanFile, monitor);
+			try {
+				IChromatogramMSD chromatogram = processingInfo.getChromatogram();
+				String name = extractNameFromFile(scanFile, "n.a.");
+				List<Float> slopes = new ArrayList<Float>();
+				float previousSignal = 0;
+				for(IScan scan : chromatogram.getScans()) {
+					float currentSignal = scan.getTotalSignal();
+					float slope = currentSignal - previousSignal; // intensities
+					// scan.getRetentionTime()); // times
+					slopes.add(slope);
+					previousSignal = currentSignal;
+				}
+				scanMap.put(name, slopes);
+			} catch(TypeCastException e) {
+				logger.warn(e);
+			}
+		}
+		return scanMap;
+	}
+
+	/**
+	 * Loads each file and tries to extract the peaks.
+	 * 
 	 * @param peakFiles
 	 * @param monitor
 	 * @return Map<String, IPeaks>
@@ -397,30 +376,6 @@ public class PrincipleComponentProcessor {
 			}
 		}
 		return peakMap;
-	}
-
-
-	/**
-	 * Loads each file and tries to extract the scans.
-	 * 
-	 * @param scanFiles
-	 * @param monitor
-	 * @return Map<String, IScans>
-	 */
-	// EDITED BY KEVIN
-	private Map<String, IScans> extractScans(List<File> scanFiles, IProgressMonitor monitor) {
-		Map<String, IScans> scanMap = new HashMap<String, IScans>();
-		for(File scanFile : scanFiles) {
-			IPeakImportConverterProcessingInfo processingInfo = PeakConverterMSD.convert(scanFile, monitor);
-			try {
-				IScans scans= processingInfo.getScans();
-				String name = extractNameFromFile(scanFile, "n.a.");
-				scanMap.put(name, scans);
-			} catch(TypeCastException e) {
-				logger.warn(e);
-			}
-		}
-		return scanMap;
 	}
 
 	/**
