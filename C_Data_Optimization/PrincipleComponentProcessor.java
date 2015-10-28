@@ -95,9 +95,8 @@ public class PrincipleComponentProcessor {
 			monitor.subTask("Extract scan values");
 			Map<String, List<Float>> scanMap = extractScans(inputFiles, monitor);
 			monitor.subTask("Prepare scan values");
-			// TODO Need to implement the code to the below methods
 			prepareScanPcaResults(scanMap, pcaResults);
-			// SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
+			SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
 			// List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
 			// pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
 			// Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
@@ -111,12 +110,12 @@ public class PrincipleComponentProcessor {
 
 	private void prepareScanPcaResults(Map<String, List<Float>> scanMap, PcaResults pcaResults) {
 
-		// TODO Implement this method properly to work on scanMap
+		// ADDED CODE BY TEAM C
 		Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
 		for(Map.Entry<String, List<Float>> entry : scanMap.entrySet()) {
 			PcaResult pcaResult = new PcaResult();
-			// TODO: pcaResult.setPeaks(entry.getValue());
-			// pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
+			pcaResult.setSlopes(entry.getValue());
+			pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
 		}
 	}
 
@@ -124,18 +123,17 @@ public class PrincipleComponentProcessor {
 
 		// TODO Implement this method
 		SortedSet<Integer> collectedRetentionTimes = new TreeSet<Integer>();
-		for(Map.Entry<String, List<Float>> scansEntry : scanMap.entrySet()) {
-			/*
-			 * IPeaks peaks = peaksEntry.getValue();
-			 * for(IPeak peak : peaks.getPeaks()) {
-			 * if(peak instanceof IPeakMSD) {
-			 * IPeakMSD peakMSD = (IPeakMSD)peak;
-			 * int retentionTime = peakMSD.getPeakModel().getRetentionTimeAtPeakMaximum();
-			 * collectedRetentionTimes.add(retentionTime);
-			 * }
-			 * }
-			 */
-		}
+		// for(Map.Entry<String, List<Float>> scansEntry : scanMap.entrySet()) {
+		// List<Float> slopes = scansEntry.getValue();
+		// for(Float slope : slopes) {
+		// NEED TO IMPLEMENT ISLOPES
+		// if(peak instanceof IPeakMSD) {
+		// IPeakMSD peakMSD = (IPeakMSD)peak;
+		// int retentionTime = peakMSD.getPeakModel().getRetentionTimeAtPeakMaximum();
+		// collectedRetentionTimes.add(retentionTime);
+		// }
+		// }
+		// }
 		return collectedRetentionTimes;
 	}
 
