@@ -14,34 +14,53 @@ import math
 
 f = open("DAD1.UV", "rb")
 #
-#
+# The data seems to start at position 0x1000
 #
 data_offset=0x1000
+#
+# A look at the file shows, that there seems
+# to be a header part at the end of the file.
+# A comparison of the files let me assume, that
+# the header position start is encoded at
+# position 0x104
+#
 f.seek(0x104)
 header_offset = struct.unpack('>I', f.read(4))[0]
-
+#
+# This could be the field where the number of scans
+# is encoded.
+#
 f.seek(0x116)
 scans = struct.unpack('>I', f.read(4))[0]
+#
+# Try to make some basic calculations.
+#
+bytes_per_scan = ((header_offset - data_offset) / scans)
+wavelengths = (bytes_per_scan / 2)
+#
 print "-----------------------"
 print "DATA OFFSET: ", data_offset
 print "HEADER OFFSET: ", header_offset
-print "SCANS: ", scans
-bytes_per_scan = ((header_offset - data_offset) / scans)
+print "NUMBER OF SCANS: ", scans
 print "BYTES PER SCANS: ", bytes_per_scan
-wavelengths = (bytes_per_scan / 2)
-print "WAVELENGTHS?: ",  wavelengths
+print "NUMBER OF WAVELENGTHS: ",  wavelengths
 print "-----------------------"
-
+#
+# The retention time for each scan
+# seems to be encoded in the header. 
+#
 f.seek(header_offset)
 for scan in range(scans):
 	vals = struct.unpack('<IHI', f.read(10))
-	print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2] 
+	print scan, '{:.2f}'.format(vals[0]/60000.0)
+	#print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
 
-print "-----------------------"
-
+#
+# Try to read the scans.
+#
 f.seek(data_offset)
 for scan in range(scans):
 	vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))		
-	print vals
+	#print vals
 		
 
