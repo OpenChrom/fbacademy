@@ -1,0 +1,18 @@
+CHANGES MADE
+	process()
+		added 5th parameter "extractionType" to "process" function
+		added extractionType check and defaulted value to 0 (which was processpeaks)
+	created function extractScans()
+	overloaded preparePcaResults
+	created extractPcaScanMap
+
+
+
+
+NEED TO IMPLEMENT
+	processingInfo.getScans()
+	IScans
+	pcaResult.setScans()
+	extractPcaScanIntensityValues 
+		SHOULD THIS BE A LIST OF DOUBLES OF ONLY THE SLOPE?
+		WE SHOULD NOT LOSE INFORMATION
