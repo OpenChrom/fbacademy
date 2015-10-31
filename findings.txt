@@ -1,0 +1,5 @@
+using phillip's script, every even value has two entries. ie .02, .04 happen twice sequentially.
+
+the header values, taking vals[2] - vals[0] shows an incrementing value, always between 154-166
+tried checking the value @ the difference value (ie difference = 2e, check position 2e) could not find correlation
+

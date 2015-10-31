@@ -5,9 +5,9 @@
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this distribution,
 # and is available at http://www.eclipse.org/legal/epl-v10.html
-# 
+#
 # Contributors:
-#	Dr. Philip Wenig
+# Dr. Philip Wenig
 #*******************************************************************************/
 import struct
 import math
@@ -47,20 +47,33 @@ print "NUMBER OF WAVELENGTHS: ",  wavelengths
 print "-----------------------"
 #
 # The retention time for each scan
-# seems to be encoded in the header. 
+# seems to be encoded in the header.
 #
+initial = True
 f.seek(header_offset)
 for scan in range(scans):
-	vals = struct.unpack('<IHI', f.read(10))
-	print scan, '{:.2f}'.format(vals[0]/60000.0)
-	#print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
+  vals = struct.unpack('<IHI', f.read(10))
+  #print vals[2] - vals[0]
+  current_position = f.tell()
+  value = vals[2] - vals[0]
+
+  if initial == True: # first value gives size of file? so ignore it
+    initial = False
+    continue
+
+  f.seek(value)
+  vals = struct.unpack('<IHI', f.read(10))
+
+  print vals
+  f.seek(current_position)
+# print scan, '{:.2f}'.format(vals[0]/60000.0)
+  #print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
 
 #
 # Try to read the scans.
 #
 f.seek(data_offset)
 for scan in range(scans):
-	vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))		
-	#print vals
-		
+  vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))
+
 
