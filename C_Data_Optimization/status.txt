@@ -3,16 +3,16 @@ CHANGES MADE
 		added 5th parameter "extractionType" to "process" function
 		added extractionType check and defaulted value to 0 (which was processpeaks)
 	created function extractScans()
-	overloaded preparePcaResults
 	created extractPcaScanMap
-
-
+	NEW: created function prepareScanPcaResults
+	NEW: created function collectScanRetentionTimes
+	NEW: implemented ISlopes class
+		- List<Float> slopes
+		- List<Integer> retentionTimes
+	NEW: modified functions to use ISlopes instead of List<Float>
+	NEW: modified IPcaResult and PcaResult to incorporate ISlopes
 
 
 NEED TO IMPLEMENT
-	processingInfo.getScans()
-	IScans
-	pcaResult.setScans()
-	extractPcaScanIntensityValues 
-		SHOULD THIS BE A LIST OF DOUBLES OF ONLY THE SLOPE?
-		WE SHOULD NOT LOSE INFORMATION
+	extractPcaScanMap
+	all functions involved in running PCA

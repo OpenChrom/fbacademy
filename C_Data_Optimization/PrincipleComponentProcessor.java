@@ -93,14 +93,25 @@ public class PrincipleComponentProcessor {
 			 * Read Scans and prepare intensity values.
 			 */
 			monitor.subTask("Extract scan values");
-			Map<String, List<Float>> scanMap = extractScans(inputFiles, monitor);
+			Map<String, ISlopes> scanMap = extractScans(inputFiles, monitor);
 			monitor.subTask("Prepare scan values");
 			prepareScanPcaResults(scanMap, pcaResults);
 			SortedSet<Integer> collectedRetentionTimes = collectScanRetentionTimes(scanMap);
-			// List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
-			// pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
+			List<Integer> extractedRetentionTimes = calculateCondensedRetentionTimes(collectedRetentionTimes, retentionTimeWindow);
+			int sampleSize = extractedRetentionTimes.size();
+			pcaResults.setExtractedRetentionTimes(extractedRetentionTimes);
+			// TODO: 
 			// Map<String, double[]> pcaScanMap = extractPcaScanMap(scanMap, extractedRetentionTimes, retentionTimeWindow);
 			// normalizeIntensityValues(pcaScanMap);
+			/*
+			 * Run PCA
+			 */
+			monitor.subTask("Run PCA");
+			/*PrincipalComponentAnalysis principleComponentAnalysis = initializePCA(pcaScanMap, sampleSize, numberOfPrincipleComponents);
+			List<double[]> basisVectors = getBasisVectors(principleComponentAnalysis, numberOfPrincipleComponents);
+			pcaResults.setBasisVectors(basisVectors);
+			setEigenSpaceAndErrorValues(principleComponentAnalysis, pcaScanMap, pcaResults);*/
+
 		}
 		/*
 		 * Return result.
@@ -108,42 +119,37 @@ public class PrincipleComponentProcessor {
 		return pcaResults;
 	}
 
-	private void prepareScanPcaResults(Map<String, List<Float>> scanMap, PcaResults pcaResults) {
+	private void prepareScanPcaResults(Map<String, ISlopes> scanMap, PcaResults pcaResults) {
 
 		// ADDED CODE BY TEAM C
 		Map<ISample, IPcaResult> pcaResultMap = pcaResults.getPcaResultMap();
-		for(Map.Entry<String, List<Float>> entry : scanMap.entrySet()) {
+		for(Map.Entry<String, ISlopes> entry : scanMap.entrySet()) {
 			PcaResult pcaResult = new PcaResult();
 			pcaResult.setSlopes(entry.getValue());
 			pcaResultMap.put(new Sample(entry.getKey()), pcaResult);
 		}
 	}
 
-	private SortedSet<Integer> collectScanRetentionTimes(Map<String, List<Float>> scanMap) {
+	private SortedSet<Integer> collectScanRetentionTimes(Map<String, ISlopes> scanMap) {
 
-		// TODO Implement this method
 		SortedSet<Integer> collectedRetentionTimes = new TreeSet<Integer>();
-		// for(Map.Entry<String, List<Float>> scansEntry : scanMap.entrySet()) {
-		// List<Float> slopes = scansEntry.getValue();
-		// for(Float slope : slopes) {
-		// NEED TO IMPLEMENT ISLOPES
-		// if(peak instanceof IPeakMSD) {
-		// IPeakMSD peakMSD = (IPeakMSD)peak;
-		// int retentionTime = peakMSD.getPeakModel().getRetentionTimeAtPeakMaximum();
-		// collectedRetentionTimes.add(retentionTime);
-		// }
-		// }
-		// }
+		for(Map.Entry<String, ISlopes> scansEntry : scanMap.entrySet()) {
+			ISlopes islopes = scansEntry.getValue();
+			List<Integer> retentionTimes = islopes.getRetentionTimes();
+			for(Integer retentionTime : retentionTimes) {
+				collectedRetentionTimes.add(retentionTime);
+			}
+		}
 		return collectedRetentionTimes;
 	}
 
-	private Map<String, double[]> extractPcaScanMap(Map<String, List<Float>> scanMap, List<Integer> extractedRetentionTimes, int retentionTimeWindow) {
+	private Map<String, double[]> extractPcaScanMap(Map<String, ISlopes> scanMap, List<Integer> extractedRetentionTimes, int retentionTimeWindow) {
 
 		// TODO Implement this method
 		Map<String, double[]> pcaScanMap = new HashMap<String, double[]>();
-		for(Map.Entry<String, List<Float>> ScansEntry : scanMap.entrySet()) {
+		for(Map.Entry<String, ISlopes> ScansEntry : scanMap.entrySet()) {
 			String name = ScansEntry.getKey();
-			List<Float> scans = ScansEntry.getValue();
+			ISlopes scans = ScansEntry.getValue();
 			/*
 			 * double[] intensityValues = extractPcaScanIntensityValues(scans, extractedRetentionTimes, retentionTimeWindow);
 			 * pcaScanMap.put(name, intensityValues);
@@ -437,17 +443,19 @@ public class PrincipleComponentProcessor {
 	 * 
 	 * @param scanFiles
 	 * @param monitor
-	 * @return Map<String, List<Float>>
+	 * @return Map<String, ISlopes>
 	 */
-	private Map<String, List<Float>> extractScans(List<File> scanFiles, IProgressMonitor monitor) {
+	private Map<String, ISlopes> extractScans(List<File> scanFiles, IProgressMonitor monitor) {
 
-		Map<String, List<Float>> scanMap = new HashMap<String, List<Float>>();
+		Map<String, ISlopes> scanMap = new HashMap<String, ISlopes>();
 		for(File scanFile : scanFiles) {
 			IChromatogramMSDImportConverterProcessingInfo processingInfo = ChromatogramConverterMSD.convert(scanFile, monitor);
 			try {
 				IChromatogramMSD chromatogram = processingInfo.getChromatogram();
 				String name = extractNameFromFile(scanFile, "n.a.");
+				ISlopes islopes = new ISlopes();
 				List<Float> slopes = new ArrayList<Float>();
+				List<Integer> retentionTimes = new ArrayList<Integer>();
 				float previousSignal = 0;
 				int previousTime = 0;
 				for(IScan scan : chromatogram.getScans()) {
@@ -455,10 +463,13 @@ public class PrincipleComponentProcessor {
 					int currentTime = scan.getRetentionTime();
 					float slope = (currentSignal - previousSignal) / (currentTime - previousTime);
 					slopes.add(slope);
+					retentionTimes.add(currentTime);
 					previousSignal = currentSignal;
 					previousTime = currentTime;
 				}
-				scanMap.put(name, slopes);
+				islopes.setSlopes(slopes);
+				islopes.setRetentionTimes(retentionTimes);
+				scanMap.put(name, islopes);
 			} catch(TypeCastException e) {
 				logger.warn(e);
 			}

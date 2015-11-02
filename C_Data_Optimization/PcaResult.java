@@ -22,18 +22,18 @@ public class PcaResult implements IPcaResult {
 	private double[] eigenSpace;
 	private double errorMemberShip;
 	// ADDED CODE BY TEAM C
-	private List<Float> slopes;
+	private ISlopes slopes;
 
 	@Override
 	// ADDED CODE BY TEAM C
-	public List<Float> getSlopes() {
+	public ISlopes getSlopes() {
 
 		return slopes;
 	}
 
 	@Override
 	// ADDED CODE BY TEAM C
-	public void setSlopes(List<Float> slopes) {
+	public void setSlopes(ISlopes slopes) {
 
 		this.slopes = slopes;
 	}
