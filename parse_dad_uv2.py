@@ -53,7 +53,7 @@ initial = True
 f.seek(header_offset)
 for scan in range(scans):
   vals = struct.unpack('<IHI', f.read(10))
-  #print vals[2] - vals[0]
+
   current_position = f.tell()
   value = vals[2] - vals[0]
 
@@ -61,13 +61,10 @@ for scan in range(scans):
     initial = False
     continue
 
-  f.seek(value)
-  vals = struct.unpack('<IHI', f.read(10))
-
-  print vals
+  # print vals
   f.seek(current_position)
-# print scan, '{:.2f}'.format(vals[0]/60000.0)
-  #print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
+  # print scan, '{:.2f}'.format(vals[0]/60000.0)
+  print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
 
 #
 # Try to read the scans.
