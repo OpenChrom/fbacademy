@@ -3,3 +3,10 @@ using phillip's script, every even value has two entries. ie .02, .04 happen twi
 the header values, taking vals[2] - vals[0] shows an incrementing value, always between 154-166
 tried checking the value @ the difference value (ie difference = 2e, check position 2e) could not find correlation
 
+starting at position 2E 04B0 that is noted in the header as header_offset, there are lots of 00 00 51, could be some stop value
+
+134217.7 is the ratio from the .ch file
+
+190 is first wavelength
+
+vals[2] signifies where each chunk of data starts
