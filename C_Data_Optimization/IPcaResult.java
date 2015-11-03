@@ -18,9 +18,9 @@ import org.eclipse.chemclipse.model.core.IPeaks;
 public interface IPcaResult {
 
 	// ADDED BY TEAM C
-	public abstract List<Float> getSlopes();
+	public abstract ISlopes getSlopes();
 
-	public abstract void setSlopes(List<Float> slopes);
+	public abstract void setSlopes(ISlopes slopes);
 
 	public abstract IPeaks getPeaks();
 
