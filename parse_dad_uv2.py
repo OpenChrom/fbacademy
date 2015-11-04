@@ -67,11 +67,18 @@ for scan in range(scans):
   # print scan, '{:.2f}'.format(vals[0]/60000.0)
   # print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
 
+# get rid of hard coded values
+initialTime = 200.0
 for start in startAddresses:
   # go to start of scan data
   f.seek(start)
-  val = struct.unpack('<hhhh', f.read(8))
-  print val[1:4] # print 3 bytes of interest 
+  val = struct.unpack('<hhHh', f.read(8))
+  # val[4] = current second
+  # val[3] = 200 += 400
+  # vals[2] = 
+  # print val[1:4] # print 3 bytes of interest 
+  print initialTime/60000.0  #, val[3]
+  initialTime += 400.0
 
 
 #
