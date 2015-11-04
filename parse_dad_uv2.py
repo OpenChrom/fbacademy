@@ -50,12 +50,13 @@ print "-----------------------"
 # seems to be encoded in the header.
 #
 initial = True
+startAddresses = []
 f.seek(header_offset)
+
 for scan in range(scans):
   vals = struct.unpack('<IHI', f.read(10))
-
+  startAddresses += [vals[2]]
   current_position = f.tell()
-  value = vals[2] - vals[0]
 
   if initial == True: # first value gives size of file? so ignore it
     initial = False
@@ -64,13 +65,20 @@ for scan in range(scans):
   # print vals
   f.seek(current_position)
   # print scan, '{:.2f}'.format(vals[0]/60000.0)
-  print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
+  # print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
+
+for start in startAddresses:
+  # go to start of scan data
+  f.seek(start)
+  val = struct.unpack('<hhhh', f.read(8))
+  print val[1:4] # print 3 bytes of interest 
+
 
 #
 # Try to read the scans.
 #
-f.seek(data_offset)
-for scan in range(scans):
-  vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))
+# f.seek(data_offset)
+# for scan in range(scans):
+#   vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))
 
 
