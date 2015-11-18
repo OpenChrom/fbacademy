@@ -71,26 +71,28 @@ currTime = None
 timeSlice = None
 first = True
 second = True
-
+count = 0
 for start in startAddresses:
   # go to start of scan data
-  f.seek(start)
-  val = struct.unpack('<hhHh', f.read(8))
+  f.seek(start + 24)
+
+  val = struct.unpack('<i', f.read(4))
+  print val[0]
   # size of current section?, current second?
-  print val[1], val[3],
-  if first:
-    currTime = val[2]
-    print currTime/60000.0
-    first = False
-  elif not first and second:
-    timeSlice = val[2] - currTime
-    currTime += timeSlice
-    print currTime/60000.0
-    second = False
-  else:
-    currTime += timeSlice
-    print currTime/60000.0  
-    
+  # print val[1], val[3],
+  # if first:
+  #   currTime = val[2]
+  #   print currTime/60000.0
+  #   first = False
+  # elif not first and second:
+  #   timeSlice = val[2] - currTime
+  #   currTime += timeSlice
+  #   print currTime/60000.0
+  #   second = False
+  # else:
+  #   currTime += timeSlice
+  #   print currTime/60000.0
+
 #
 # Try to read the scans.
 #
