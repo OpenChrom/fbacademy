@@ -76,8 +76,15 @@ for start in startAddresses:
   # go to start of scan data
   f.seek(start + 24)
 
-  val = struct.unpack('<i', f.read(4))
-  print val[0]
+  val = struct.unpack('<i', f.read(4)) # first wavelength
+  # print str(val[0]) + str(val[1]) + str(val[2])
+  # print val[0]
+
+  # need to find way to choose between 'h' or 'i'
+  val = struct.unpack('<hh', f.read(4)) # second wavelength
+  print val[0], val[1]
+
+
   # size of current section?, current second?
   # print val[1], val[3],
   # if first:
