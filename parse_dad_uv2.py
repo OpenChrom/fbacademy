@@ -11,6 +11,7 @@
 #*******************************************************************************/
 import struct
 import math
+import sys
 
 f = open("DAD1.UV", "rb")
 #
@@ -72,18 +73,29 @@ timeSlice = None
 first = True
 second = True
 count = 0
+workingSet = 3 # how many values we're currently working with
+
+mainList = []
+tempList = []
+
 for start in startAddresses:
   # go to start of scan data
-  f.seek(start + 24)
+  f.seek(start + 22)
+  tempList = []
+  # working on extracting first two values of each section
+  for i in range(workingSet): 
+    delta = struct.unpack('<h', f.read(2))[0]
+    # print "delta: " + str(delta)
+    if delta == -32768:
+      delta = struct.unpack('<i', f.read(4))[0]
+      intensity = delta
+    else:
+      intensity += delta
+    tempList.append(intensity)
+  mainList.append(tempList)
 
-  val = struct.unpack('<i', f.read(4)) # first wavelength
-  # print str(val[0]) + str(val[1]) + str(val[2])
-  # print val[0]
 
-  # need to find way to choose between 'h' or 'i'
-  val = struct.unpack('<hh', f.read(4)) # second wavelength
-  print val[0], val[1]
-
+###### TIMES ########
 
   # size of current section?, current second?
   # print val[1], val[3],
@@ -100,11 +112,18 @@ for start in startAddresses:
   #   currTime += timeSlice
   #   print currTime/60000.0
 
-#
-# Try to read the scans.
-#
-# f.seek(data_offset)
-# for scan in range(scans):
-#   vals = struct.unpack('<' + wavelengths * 'h', f.read(wavelengths * 2))
+# print header
+for i in range(workingSet):
+  # print "waveLen_" + str(190 + i*2),
+  sys.stdout.write("waveLen_" + str(190 + i*2))
+  if not i == workingSet - 1:
+    print ", ",
+print
 
-
+# print values
+for i in range(len(mainList)):
+  for j in range(workingSet):
+    sys.stdout.write(str(mainList[i][j]))
+    if not j == workingSet - 1:
+      print ", ",
+  print # prints new line
