@@ -54,6 +54,7 @@ initial = True
 startAddresses = []
 f.seek(header_offset)
 
+# Get starting addresses of each scan
 for scan in range(scans):
   vals = struct.unpack('<IHI', f.read(10))
   startAddresses += [vals[2]]
@@ -63,29 +64,42 @@ for scan in range(scans):
     initial = False
     continue
 
-  # print vals
   f.seek(current_position)
-  # print scan, '{:.2f}'.format(vals[0]/60000.0)
-  # print scan, '{:.2f}'.format(vals[0]/60000.0), vals[1], vals[2]
 
+# temporary variables
 currTime = None
 timeSlice = None
 first = True
 second = True
-count = 0
-workingSet = 3 # how many values we're currently working with
 
-mainList = []
-tempList = []
+count = 0
+workingSet = 226 # how many wavelengths to output
+
+mainList = [] # list of all scans
+tempList = [] # temporary list contains data for all wavelengths during one scan
+timeList = [] # list of times
 
 for start in startAddresses:
-  # go to start of scan data
-  f.seek(start + 22)
+  # get time
+  f.seek(start)
+  val = struct.unpack('<hhHh', f.read(8))
+  if first:
+    currTime = val[2]
+    first = False
+  elif not first and second:
+    timeSlice = val[2] - currTime
+    currTime += timeSlice
+    second = False
+  else:
+    currTime += timeSlice
+  timeList.append(currTime/60000.0)
+
+  f.seek(start + 22) # seek to start of scan data (go past initial header)
   tempList = []
-  # working on extracting first two values of each section
+
+  # get value
   for i in range(workingSet): 
     delta = struct.unpack('<h', f.read(2))[0]
-    # print "delta: " + str(delta)
     if delta == -32768:
       delta = struct.unpack('<i', f.read(4))[0]
       intensity = delta
@@ -94,36 +108,19 @@ for start in startAddresses:
     tempList.append(intensity)
   mainList.append(tempList)
 
-
-###### TIMES ########
-
-  # size of current section?, current second?
-  # print val[1], val[3],
-  # if first:
-  #   currTime = val[2]
-  #   print currTime/60000.0
-  #   first = False
-  # elif not first and second:
-  #   timeSlice = val[2] - currTime
-  #   currTime += timeSlice
-  #   print currTime/60000.0
-  #   second = False
-  # else:
-  #   currTime += timeSlice
-  #   print currTime/60000.0
-
 # print header
+print "time,",
 for i in range(workingSet):
-  # print "waveLen_" + str(190 + i*2),
-  sys.stdout.write("waveLen_" + str(190 + i*2))
+  sys.stdout.write(str(190 + i*2))
   if not i == workingSet - 1:
-    print ", ",
+    print ",",
 print
 
-# print values
+# print comma-separated values
 for i in range(len(mainList)):
+  print str(timeList[i]) + ",", # print time
   for j in range(workingSet):
-    sys.stdout.write(str(mainList[i][j]))
+    sys.stdout.write(str(mainList[i][j])) # print values for all wavelengths
     if not j == workingSet - 1:
-      print ", ",
-  print # prints new line
+      print ",",
+  print
