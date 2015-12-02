@@ -71,6 +71,7 @@ currTime = None
 timeSlice = None
 first = True
 second = True
+intensity = 0
 
 count = 0
 workingSet = 226 # how many wavelengths to output
